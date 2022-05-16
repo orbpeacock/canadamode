@@ -1,0 +1,46 @@
+The motivation of a character json file is that it describes the parts of an image, and how they connect on their parent images.
+The parts can have different states too that move the positions of their child parts.
+For example a character might have:
+    A body with sockets for 2 arms and a head. It has 3 states: Neutral, Arms raised, or Pointing to the left
+    A left arm that connects its shoulder to the body
+    A right arm that connects its shoulder to the body
+    A Head that connects its middle-bottom to the body. It has sockets for 2 eyes, a nose, and a mouth. It has 3 states: Facing Left, Facing Center, and Facing right
+    A left eye that has a state for open and for closed
+    A right eye that has a state for open and for closed
+    a nose
+    a mouth that has states for closed, 50% open, and 100% open
+
+Glossary of terms used here:
+"Image_element": A Python object that is mainly an image with position info and a number of other special attributes.
+"Position Tuple": A 2-item list [] of numbers from 0 to 1 representing percent of the object's height/width. eg [0, 0] is the upper left, [0.5, 0.5] is the middle
+"Socket": The place on a parent object where its child will connect
+
+Anatomy of the JSON file:
+
+The base level of a character json is a dict {} which contains:
+    window_size (optional): The size of the window. (uses default settings if not set)
+    bg_color (optional): The color of the background. (uses default settings if not set)
+    fps (optional): The FPS that this character should update at. (uses default settings if not set)
+    volume_range: A two-item list that contains the quietest volume that counts as speaking, and the volume that counts as 100% volume. Eg, [0.3, 1.0] (Uses default settings if not set)
+    image_elements: list [] of Image_element dicts {}. You'll need an image element for every piece of the complete character. Eg, body, head, left_eye, right_eye, nose, mouth, left_arm, right_arm
+
+        Each Image_element dict contains:
+        name: A string to refer to this Image_Element. Other Image_elements may use this to find it
+        states: a list [] of state dicts {}. This has to exist even if it only has one state
+
+            Each state dict contains:
+            state_name: A string to refer to this state when switching states.
+            image_path: A string that tells where to find the image file. Can be absolute or relative to the root chattyface folder.
+            parent_attachment_point: a dict {} that represents the point on this image that connects to the parent. It contains:
+                position_on_self: The Position Tuple on this image that connects to a point on the parent.
+                parent_name: The name of the parent Image_element. Any invalid name (eg, a blank or a name that doesn't exist) will assume you mean the screen/window/background
+                position_on_parent (optional): The Position Tuple on the parent that the position_on_self Position Tuple will line up with. If not included, it will try to attach to a socket for this part. If all else fails, it will go to the center.
+            child_sockets (optional): A list [] of Socket dicts {} for child parts to connect to. 
+                Each socket dict contains:
+                child_name: The name of the child Image_element that will connect to this socket
+                position_on_self: The Position Tuple on this image where the socket will be
+
+
+
+
+        

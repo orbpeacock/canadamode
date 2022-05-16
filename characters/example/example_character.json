@@ -1,0 +1,49 @@
+{
+    "image_elements": [
+        {
+            "name": "body",
+            "states": [
+                {
+                    "state_name": "base",
+                    "image_path": "characters/example/Body.png",
+                    "parent_attachment_point": {
+                        "position_on_self": [
+                            0.5,
+                            1
+                        ],
+                        "parent_name": "background",
+                        "position_on_parent": [
+                            0.5,
+                            1
+                        ]
+                    },
+                    "child_sockets": [
+                        {
+                            "child_name": "head",
+                            "position_on_self": [
+                                0.5,
+                                0.5
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "head",
+            "states": [
+                {
+                    "state_name": "base",
+                    "image_path": "characters/example/Head.png",
+                    "parent_attachment_point": {
+                        "position_on_self": [
+                            0.5,
+                            0.9
+                        ],
+                        "parent_name":"body"
+                    }
+                }
+            ]
+        }
+    ]
+}
