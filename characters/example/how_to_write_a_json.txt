@@ -40,6 +40,50 @@ The base level of a character json is a dict {} which contains:
                 child_name: The name of the child Image_element that will connect to this socket
                 position_on_self: The Position Tuple on this image where the socket will be
 
+Any level of the json can contain "trigger-actions", a list [] composed of triggers and associated actions, formatted like so:
+
+
+TODO: Okay, so I never really sorted this out, and left a mess. Try defining the syntax of the head flap. It's a challenging use case
+TODO: Some of them special identifiers are a good idea though
+TODO: Gotta solve the problem of how to apply offsets to make the head rise but also remember its original position.
+    "<condition (optional)>:<action>"
+
+    Examples:
+        Blink every 5.5 seconds
+            "5.5 > $timer > 5" : ["state_change(left_eye, closed)", "state_change(right_eye, closed)"]
+            "$timer > 5.5" : ["state_change(left_eye, open)", "state_change(right_eye, open)", "$timer = 0']
+
+        Set the height of the head to a value every frame
+            "$each_frame" : [set($element(head).$position_on_parent, )]
+
+
+
+    "$timer > 5" : ["set($timer, 0)", "state_change("eyes_closed")"]
+
+    Conditions must be expressions that evaluate to True or false. The following special expressions are also available:
+        $each_frame ~ Equates to True, used for triggers that will happen each frame
+        $state_started ~ When the current state begins this is True, but once it has been triggered, False.
+        $silence ~ A timer in seconds which tracks how long it has been since the mic's volume detected enough noise
+        
+
+
+
+    Actions are strings, OR optionally a list [] of strings.
+    Valid actions are:
+    set(<target attribute>, <desired value>)
+    get(<target attribute>)
+    state_change <image element name> <state name>
+
+    You can use special identifiers to access dynamic values:
+    $element(<name>) ~ Use this to refer to a particular image element
+    $state(<name>) ~ Use this to refer to a particular state
+    $timer ~ The timer starts at 0 and counts the time passed. Can be set, which is useful to set a looped action by setting the timer to 0
+    $volume ~ The mic's current volume level, as a percentile of the range defined. The minimum volume returns 0, the maximum, 1
+    Use . notation to access an attribute of an object (eg, "$element(head).position_on_parent")
+
+    Any action can contain the following extra tags:
+    TODO: $duration : 
+    TODO: $tween(time, bezier*) : 
 
 
 
