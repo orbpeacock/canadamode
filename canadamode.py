@@ -21,6 +21,8 @@ DEBUG_FILE = os.path.join('jsons', 'debug_file.json')
 
 CLOCK = pygame.time.Clock()
 
+LAST_MICPERCENT = 0
+CURRENT_MIC_PERCENT = 0
 
 # TODO: See if we can make the window transparent. Apparently maybe https://stackoverflow.com/questions/550001/fully-transparent-windows-in-pygames
 
@@ -58,11 +60,11 @@ def get_window_size():
     global WINDOW_WIDTH, WINDOW_HEIGHT
     return (WINDOW_WIDTH, WINDOW_HEIGHT)
 
-
-def dirty_all_sound_users():
-    for e in ALL_ELEMENTS:
-        if e.volume_offset != (0,0):
-            e.dirty = 1
+def trigger_all_mic_listeners():
+    for element in ALL_ELEMENTS:
+        for event in element.events:
+            if event['trigger'] == 'mic':
+                event['function'](*event['arguments'])
 
 def relative_mic_percent(raw_level):
     if raw_level < VOLUME_FLOOR:
@@ -124,6 +126,25 @@ Tween <duration>, Crossfade <duration>
 #     def check(self):
 
 
+
+
+# I starting writing a listener class, then realized that if it is remembering functions from other objects, I will
+# A) Have unexpected references to those objects and would have to destroy them carefully
+# B) Have to code some way of translating the json representation of the object to real pointers
+# And if that's not enough, I think it'll actually be easier to just track listens ON the object they're for, so I'm doing that.
+# I'll probably just delete this later.
+
+# # A Listener has a list of "listens" which are tuples of [0] A string defining the trigger, [1] A function to run, and [2] A list of arguments
+# class Listener():
+#     def __init__(self):
+#         self.listens = []
+    
+#     def event(type, details = None):
+#         for i in self.listens:
+#             if i[0] == type:
+#                 arguments = 
+#                 i[1]
+
 class Image_element(pygame.sprite.DirtySprite):
     def __init__(self, source_dict=None):
         super().__init__(ALL_SPRITES, ALL_ELEMENTS)
@@ -133,17 +154,14 @@ class Image_element(pygame.sprite.DirtySprite):
         self.sockets = []
         self.parent = None
         self.children = []
+        self.events = []
         self.anchor_on_parent = [0.5, 0.5]
         self.anchor_on_self = [0.5, 0.5]
-        self.volume_offset = (0, 0)
+        self.offsets = {}
+        self.image = pygame.surface.Surface((1, 1)).convert_alpha()
+        self.rect = self.image.get_rect()
         if source_dict:
             self.setup_from_dict(source_dict)
-
-        if self.image_path and os.path.isfile(self.image_path):
-            self.image = pygame.image.load(self.image_path).convert_alpha()
-        else:
-            self.image = pygame.surface.Surface((1, 1)).convert_alpha()
-        self.rect = self.image.get_rect()
         self.apply_position()
 
     def setup_from_dict(self, dict_arg):
@@ -163,7 +181,38 @@ class Image_element(pygame.sprite.DirtySprite):
         for s in source_dict.get('states', []):
             self.states.append(State(owner=self, state_data=s))
         self.change_state(0)
-        self.volume_offset = source_dict.get('volume_offset', self.volume_offset)
+
+        # TODO:
+        # When parsing offsets and event arguments, enable the use of special characters
+        # e.g.:
+        # $mic_percent
+        # (maybe even the functions... as in $self.f, $parent.f)
+        #
+
+
+        # TODO: URGH - Offsets and events should be per-state. That'll be a big to-do
+
+        # Offsets should be found in a dict called "offsets"
+        # They should each be a string key, and a 2-item list as value
+        offsets = source_dict.get('offsets', dict())
+        for k in offsets:
+            self.offsets[k] = offsets[k]
+
+        # Events should be found in a list called "events"
+        # They should be a dict containing:
+        #   "trigger":(the trigger to run the function)
+        #   "function":(the function to run)
+        #   "arguments":(optional) a list of arguments for the function
+        events_to_parse = source_dict.get('events', [])
+        for e in events_to_parse:
+            trigger = e.get('trigger')
+            function = e.get('function')
+            if function in dir(self):
+                function = getattr(self, function)
+            else:
+                continue
+            arguments = e.get('arguments', [])
+            self.events.append({"trigger":trigger, "function":function, "arguments":arguments})
 
     # packages the contents of this Image_element as a dict, ready to write to a json
     # def package_as_dict(self) -> dict:
@@ -200,11 +249,12 @@ class Image_element(pygame.sprite.DirtySprite):
                 self.parent.rect.height * self.anchor_on_parent[1]
         return (x, y)
 
-    def apply_position(self, mic_level=0):
+    def apply_position(self):
         # apply_position() will move the object's rect to where it should be relative to its anchorpoint
+        offset = self.calculate_offset()
         parent_x, parent_y = self.get_anchor_target()
-        x_offset = self.rect.width * self.anchor_on_self[0] + self.volume_offset[0] * mic_level
-        y_offset = self.rect.height * self.anchor_on_self[1] + self.volume_offset[1] * mic_level
+        x_offset = self.rect.width * self.anchor_on_self[0] + offset[0]
+        y_offset = self.rect.height * self.anchor_on_self[1] + offset[1]
         new_topleft = (parent_x - x_offset, parent_y - y_offset)
         if self.rect.topleft != new_topleft:
             self.rect.topleft = new_topleft
@@ -212,6 +262,24 @@ class Image_element(pygame.sprite.DirtySprite):
             for c in self.children:
                 c.dirty = 1
 
+    def apply_offset(self, offset_name, offset_value):
+        self.offsets[offset_name] = offset_value
+
+    def calculate_offset(self):
+        additive_total_x = 0
+        additive_total_y = 0
+        for k in self.offsets:
+            multiplier = 1.0
+            if k == 'mic_percent':
+                multiplier = CURRENT_MIC_PERCENT
+            additive_total_x += self.offsets[k][0] * multiplier
+            additive_total_y += self.offsets[k][1] * multiplier
+        return additive_total_x, additive_total_y
+            
+
+    # TODO: I hate states! Why did I think that was a good idea? Shouldn't I just have multiple Image Elements? I could mass load them if that was my concern
+    # Ugh, maybe I'm being hasty. This should be considered carefully before I act on it.
+    # Okay, so an Image_Element has 1+ States, not the other way around...
     def change_state(self, new_state_identifier):
         # This command will destroy all pre-existing sockets, change its parent, switch the image, then create the new sockets
         # Accepts as an argument a state object, a name (str), or an index (int)
@@ -230,24 +298,30 @@ class Image_element(pygame.sprite.DirtySprite):
         self.anchor_on_self = new_state.parent_position_on_self
         self.image_path = new_state.image_path
         self.image = new_state.image
+        self.rect = self.image.get_rect()
+        self.scale = new_state.scale
 
-    def update(self, mic_level = 0):
+    def update(self):
+        # TODO:
         # I want the dirty elements to only update when necessary, but they're updating every frame
         # I should learn more exactly how to deal with dirty sprites / groups 
         #
         # if self.parent and self.parent.dirty:
-        #     self.parent.update(mic_level)
-        self.apply_position(mic_level)
-        print(f"updoot{random.randint(1,6)}")
+        #     self.parent.update()
+        self.apply_position()
+        # print(f"updoot{random.randint(1,6)}")
         # self.dirty = 0
 
 class State():
     # A state is one potential image used for a part of the character along with associated attachment info
     def __init__(self, owner, state_data):
-        self.image_path = state_data.get('image_path', "")
-        self.image = pygame.image.load(self.image_path)
-        self.parent_name = state_data.get('parent_name', None)
         self.owner = owner
+        self.image_path = state_data.get('image_path', "")
+        self.scale = state_data.get('image_scale', 1.0)
+        # self.image = pygame.image.load(self.image_path)
+        # self.image = pygame.transform.rotozoom(self.image, 0.0, self.scale)
+        self.image = pygame.transform.rotozoom(pygame.image.load(self.image_path), 0.0, self.scale)
+        self.parent_name = state_data.get('parent_name', None)
         socket_data = state_data.get('child_sockets', [])
         self.sockets = [Socket(self.owner, s) for s in socket_data]
 
@@ -279,11 +353,11 @@ def load_character_json(json_path):
         image_element_container.add(new_image_element)
 
 
-def main(mic_level=0):
+def main():
 
     CLOCK.tick(FPS)
 
-    ALL_ELEMENTS.update(current_mic_percent)
+    ALL_ELEMENTS.update()
     ALL_ELEMENTS.draw(display)
 
     pygame.display.update()
@@ -315,10 +389,12 @@ display.fill(BG_COLOR)
 pygame.display.set_caption("PieGopher Character Animator")
 
 sound_capture = soundcapture.Stream()
-last_mic_percent = 0
+
+# example_character = load_character_json(
+#     r"characters/example/example_character.json")
 
 example_character = load_character_json(
-    r"characters/example/example_character.json")
+    r"characters/Canadian Pie/character.json")
 
 # The main loop
 while True:
@@ -328,10 +404,10 @@ while True:
             pygame.quit()
             sys.exit()
 
-    current_mic_percent = relative_mic_percent(sound_capture.query())
+    CURRENT_MIC_PERCENT = relative_mic_percent(sound_capture.query())
     # TODO: Make the different volume level detection less dumb
-    if int(current_mic_percent * 100) != int(last_mic_percent * 100):
-        dirty_all_sound_users()
-    last_mic_percent = current_mic_percent
+    if int(CURRENT_MIC_PERCENT * 100) != int(LAST_MICPERCENT * 100):
+        trigger_all_mic_listeners()
+    LAST_MICPERCENT = CURRENT_MIC_PERCENT
 
-    main(current_mic_percent)
+    main()

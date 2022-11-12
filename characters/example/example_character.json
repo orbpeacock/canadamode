@@ -44,9 +44,24 @@
                     }
                 }
             ],
-            "volume_offset": [
-                0,
-                200
+            "offsets": {
+                "mic_percent": [
+                    0,
+                    200
+                ]
+            },
+            "events": [
+                {
+                    "trigger": "example_trigger",
+                    "function": "apply_offset",
+                    "arguments": [
+                        "custom_offset",
+                        [
+                            50,
+                            50
+                        ]
+                    ]
+                }
             ]
         }
     ]

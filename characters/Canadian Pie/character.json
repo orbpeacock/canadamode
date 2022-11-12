@@ -1,0 +1,181 @@
+{
+    "image_elements": [
+        {
+            "name": "body",
+            "states": [
+                {
+                    "state_name": "base",
+                    "image_path": "characters/Canadian Pie/Body.png",
+                    "image_scale": 0.4,
+                    "parent_attachment_point": {
+                        "position_on_self": [
+                            0.5,
+                            1
+                        ],
+                        "parent_name": "background",
+                        "position_on_parent": [
+                            0.5,
+                            1
+                        ]
+                    },
+                    "child_sockets": [
+                        {
+                            "child_name": "head lower",
+                            "position_on_self": [
+                                0.5,
+                                0
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "head lower",
+            "states": [
+                {
+                    "state_name": "base",
+                    "image_path": "characters/Canadian Pie/head_lower.png",
+                    "image_scale": 0.4,
+                    "parent_attachment_point": {
+                        "position_on_self": [
+                            0.5,
+                            0.85
+                        ],
+                        "parent_name":"body"
+                    },
+                    "child_sockets": [
+                        {
+                            "child_name": "head upper",
+                            "position_on_self": [
+                                0.5,
+                                0
+                            ]
+                        },
+                        {
+                            "child_name": "beard",
+                            "position_on_self": [
+                                0.5,
+                                0.5
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "head upper",
+            "states": [
+                {
+                    "state_name": "base",
+                    "image_path": "characters/Canadian Pie/head_upper.png",
+                    "image_scale": 0.4,
+                    "parent_attachment_point": {
+                        "position_on_self": [
+                            0.5,
+                            0.925
+                        ],
+                        "parent_name":"head lower"
+                    },
+                    "child_sockets": [
+                        {
+                            "child_name": "hair",
+                            "position_on_self": [
+                                0.5,
+                                0
+                            ]
+                        },
+                        {
+                            "child_name": "eyes",
+                            "position_on_self": [
+                                0.5,
+                                0.6
+                            ]
+                        },
+                        {
+                            "child_name": "moustache",
+                            "position_on_self": [
+                                0.5,
+                                0.9
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "offsets": {
+                "mic_percent": [
+                    0,
+                    200
+                ]
+            }
+        },
+        {
+            "name": "hair",
+            "states": [
+                {
+                    "state_name": "base",
+                    "image_path": "characters/Canadian Pie/hair.png",
+                    "image_scale": 0.4,
+                    "parent_attachment_point": {
+                        "position_on_self": [
+                            0.5,
+                            0.25
+                        ],
+                        "parent_name":"head upper"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "eyes",
+            "states": [
+                {
+                    "state_name": "base",
+                    "image_path": "characters/Canadian Pie/eyes_open.png",
+                    "image_scale": 0.4,
+                    "parent_attachment_point": {
+                        "position_on_self": [
+                            0.5,
+                            0.5
+                        ],
+                        "parent_name":"head upper"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "moustache",
+            "states": [
+                {
+                    "state_name": "base",
+                    "image_path": "characters/Canadian Pie/moustache.png",
+                    "image_scale": 0.4,
+                    "parent_attachment_point": {
+                        "position_on_self": [
+                            0.5,
+                            0.5
+                        ],
+                        "parent_name":"head upper"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "beard",
+            "states": [
+                {
+                    "state_name": "base",
+                    "image_path": "characters/Canadian Pie/beard.png",
+                    "image_scale": 0.4,
+                    "parent_attachment_point": {
+                        "position_on_self": [
+                            0.5,
+                            0.2
+                        ],
+                        "parent_name":"head lower"
+                    }
+                }
+            ]
+        }
+    ]
+}
